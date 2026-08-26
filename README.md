@@ -314,6 +314,79 @@ isaacsim_py script/eval.py --task Task5_Air_Fryer_Manipulation --model-type smol
 
   After downloading, ensure the model is placed in the root directory of this project.
 
+#### 2.4.3 Evaluation Trajectories
+
+Per-step trajectory recording is enabled by default. Each evaluation run stores one directory per rollout:
+
+```text
+runs/eval/<task>/<model_timestamp>/
+├── evaluation_data.csv
+└── trajectories/
+    └── episode-000000/
+        ├── trajectory.hdf5
+        ├── metadata.json
+        ├── task_config.json
+        └── preview.mp4
+```
+
+`trajectory.hdf5` contains:
+
+- `observations/*`: 26-DOF state and head/left-wrist/right-wrist BGR camera frames
+- `actions/policy_chunk`: the complete action chunk returned by the policy
+- `actions/applied_joint_positions`: the final joint target applied for that evaluation step
+- `states/robot/*`: all robot joint positions, velocities, root pose, and root velocity
+- `states/objects/*`: tracked task-object poses and velocities
+- `step_index`, `success`, and `infos/json`: per-step evaluation state
+- `initial_state/*`: robot and object state captured after rollout setup and stabilization
+
+The HDF5 file is flushed after each step, so an interrupted rollout is retained with an
+`interrupted` status in `metadata.json`. Use the following options to customize recording:
+
+```text
+--trajectory-output-dir <PATH>   Store trajectories under a separate root
+--trajectory-video-fps <FPS>     Set preview.mp4 frame rate (default: 20)
+--no-trajectory-video            Save HDF5 without encoding preview.mp4
+--disable-trajectory-recording   Disable trajectory recording
+```
+
+#### 2.4.4 Run All Tasks with SmolVLA
+
+The patched LeRobot configuration loads the SmolVLM base model from the RealMirror project root.
+Download it on the host; the bind-mounted source directory makes it available in the container:
+
+```bash
+conda activate base
+hf download \
+    HuggingFaceTB/SmolVLM2-500M-Video-Instruct \
+    --local-dir /home/bang/projects/humanoid-embodied-reasoning/RealMirror/SmolVLM2-500M-Video-Instruct
+```
+
+Run the five benchmark tasks sequentially with the official rollout counts and horizons:
+
+```bash
+cd /workspace/RealMirror
+bash script/eval_all_smolvla.sh
+```
+
+To continue to the next task when one task fails:
+
+```bash
+bash script/eval_all_smolvla.sh --continue-on-error
+```
+
+Before launching the full benchmark, run a short pipeline and trajectory smoke test:
+
+```bash
+bash script/eval_all_smolvla.sh \
+    --num-rollouts 1 \
+    --max-horizon 10 \
+    --no-trajectory-video \
+    --continue-on-error
+```
+
+The smoke-test horizon is intentionally too short to measure task success; it only verifies
+model loading, scene startup, stepping, and trajectory output. Run `--help` to list all script options.
+
 ### 2.5  Teleoperation
 
 RealMirror supports two teleoperation modes. Choose based on your use case:

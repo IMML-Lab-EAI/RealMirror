@@ -44,6 +44,36 @@ parser.add_argument(
 parser.add_argument("--resume-dir", type=str, default=None, help="Path to resume evaluation from")
 parser.add_argument("--output-dir", type=str, default="runs/eval", help="Path to save evaluation output")
 parser.add_argument(
+    "--trajectory-output-dir",
+    "--trajectory_output_dir",
+    dest="trajectory_output_dir",
+    type=str,
+    default=None,
+    help="Trajectory root directory (default: <evaluation-run>/trajectories)",
+)
+parser.add_argument(
+    "--trajectory-video-fps",
+    "--trajectory_video_fps",
+    dest="trajectory_video_fps",
+    type=int,
+    default=20,
+    help="Frame rate for per-rollout trajectory preview.mp4",
+)
+parser.add_argument(
+    "--no-trajectory-video",
+    "--no_trajectory_video",
+    dest="no_trajectory_video",
+    action="store_true",
+    help="Save trajectory HDF5 data without encoding preview.mp4",
+)
+parser.add_argument(
+    "--disable-trajectory-recording",
+    "--disable_trajectory_recording",
+    dest="disable_trajectory_recording",
+    action="store_true",
+    help="Disable per-step trajectory recording",
+)
+parser.add_argument(
     "--area-file",
     type=str,
     default="data/eval/data_area/data_area_task1.txt",
@@ -161,6 +191,7 @@ from evaluate.inference_evaluator import (
     load_evaluation_progress,
     save_evaluation_progress,
 )
+from evaluate.trajectory_recorder import RealMirrorTrajectoryRecorder
 import utility.system_utils as system_utils
 
 
@@ -190,6 +221,7 @@ class EvaluationRunner:
         self.pristine_initial_poses = {}
         self.eval_config: Optional[EvalConfig] = None
         self.fixed_objects_info = None
+        self.trajectory_recorder: Optional[RealMirrorTrajectoryRecorder] = None
 
         self._initialize()
 
@@ -597,6 +629,84 @@ class EvaluationRunner:
             )
             self.robot.robot_ref.get_articulation_controller().apply_action(action)
 
+        policy_actions = np.asarray(actions, dtype=np.float32)
+        return {
+            "observation": {
+                "state": np.asarray(state),
+                "head_camera_bgr": np.asarray(head_image),
+                "left_wrist_camera_bgr": np.asarray(left_wrist_image),
+                "right_wrist_camera_bgr": np.asarray(right_wrist_image),
+            },
+            "policy_actions": policy_actions,
+            "applied_joint_positions": policy_actions[-1],
+        }
+
+    def _setup_trajectory_recorder(self):
+        if self.args.disable_trajectory_recording:
+            self.trajectory_recorder = None
+            Logger.info("Trajectory recording disabled")
+            return
+
+        if self.args.trajectory_output_dir:
+            trajectory_dir = (
+                Path(self.args.trajectory_output_dir)
+                / self.args.task
+                / self.output_dir.name
+            )
+        else:
+            trajectory_dir = self.output_dir / "trajectories"
+
+        self.trajectory_recorder = RealMirrorTrajectoryRecorder(
+            run_dir=trajectory_dir,
+            task_name=self.args.task,
+            model_type=self.args.model_type,
+            video_fps=self.args.trajectory_video_fps,
+            save_video=not self.args.no_trajectory_video,
+        )
+        Logger.info(f"Trajectory output directory: {trajectory_dir}")
+
+    def _start_trajectory_episode(self, rollout_idx: int):
+        if self.trajectory_recorder is None:
+            return
+
+        episode_metadata = {
+            "max_horizon": self.args.max_horizon,
+            "model_type": self.args.model_type,
+            "task_configurations": self.task_configurations,
+        }
+        if rollout_idx < len(self.evaluation_points):
+            episode_metadata["evaluation_point"] = self.evaluation_points[rollout_idx]
+
+        self.trajectory_recorder.start_episode(
+            rollout_index=rollout_idx,
+            robot=self.robot,
+            tracked_prims=self.all_task_prims,
+            episode_metadata=episode_metadata,
+            task_config=self.task_config,
+        )
+
+    def _record_trajectory_step(self, step: int, inference_step, success: bool):
+        if self.trajectory_recorder is None or inference_step is None:
+            return
+
+        self.trajectory_recorder.record_step(
+            step_index=step,
+            observation=inference_step["observation"],
+            policy_actions=inference_step["policy_actions"],
+            applied_joint_positions=inference_step["applied_joint_positions"],
+            success=success,
+            info={
+                "task": self.args.task,
+                "active_task": self.current_task_config,
+            },
+        )
+
+    def _finish_trajectory_episode(self, result: Dict) -> str:
+        if self.trajectory_recorder is None:
+            return ""
+        episode_dir = self.trajectory_recorder.end_episode(result)
+        return str(episode_dir) if episode_dir is not None else ""
+
     def check_task_success(self, cur_task) -> bool:
         cylinder_path = cur_task.get("cylinder_prim_path")
         target_path = cur_task.get("target_prim_path")
@@ -653,15 +763,18 @@ class EvaluationRunner:
 
         self.frame_buffer = []
         self.is_recording = True
+        self._start_trajectory_episode(rollout_idx)
 
         is_successful = False
         final_step = self.args.max_horizon
 
         for step in range(self.args.max_horizon):
             self.world.step(render=True)
-            self.run_inference_step()
+            inference_step = self.run_inference_step()
 
-            if self.check_task_success(self.current_task_config):
+            step_success = self.check_task_success(self.current_task_config)
+            self._record_trajectory_step(step, inference_step, step_success)
+            if step_success:
                 is_successful = True
                 final_step = step + 1
                 break
@@ -678,6 +791,9 @@ class EvaluationRunner:
             "cylinder_prim_path": self.current_task_config.get("cylinder_prim_path", ""),
             "target_prim_path": self.current_task_config.get("target_prim_path", ""),
         }
+        result["trajectory_path"] = self._finish_trajectory_episode(
+            {**result, "final_step": final_step}
+        )
 
         Logger.info("  [Final State Check]")
         cylinder_path = self.current_task_config.get("cylinder_prim_path")
@@ -753,6 +869,7 @@ class EvaluationRunner:
             Logger.info(f"Starting new evaluation, output to: {self.output_dir}")
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._setup_trajectory_recorder()
         return self.output_dir / "evaluation_data.csv"
 
     def _load_or_initialize_evaluation_data(self, csv_path):
@@ -878,6 +995,8 @@ class EvaluationRunner:
             Logger.info(f"Starting new evaluation, output to: {output_dir}")
 
         output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_dir = output_dir
+        self._setup_trajectory_recorder()
         csv_path = output_dir / "evaluation_data.csv"
 
         return output_dir, csv_path
@@ -919,11 +1038,26 @@ class EvaluationRunner:
         self._ensure_environment_stabilization()
         self.frame_buffer = []
         self.is_recording = True
+        self._start_trajectory_episode(rollout_idx)
 
         final_step = self._execute_task3_simulation_steps(rollout_idx)
         sub_success = self._evaluate_task3_results(rollout_idx)
 
-        self._finalize_task3_rollout_result(rollout_idx, sub_success, final_step, csv_path)
+        trajectory_path = self._finish_trajectory_episode(
+            {
+                "rollout_idx": rollout_idx,
+                "success": 1 if all(sub_success.values()) else 0,
+                "final_step": final_step,
+                "subtask_success": sub_success,
+            }
+        )
+        self._finalize_task3_rollout_result(
+            rollout_idx,
+            sub_success,
+            final_step,
+            csv_path,
+            trajectory_path,
+        )
         self.is_recording = False
         self.frame_buffer = []
 
@@ -975,26 +1109,30 @@ class EvaluationRunner:
             # Spawn objects at specific steps
             if step == 0 and len(spawn_names) > 0:
                 Logger.info(f"Spawning object: {spawn_names[0]} at step {step}")
-                self._spawn_task3_object(object_spawn_order[spawn_names[0]])
-                self.inference_engine.set_task_name(object_spawn_order[spawn_names[0]].get("task_name", ""))
+                self.current_task_config = object_spawn_order[spawn_names[0]]
+                self._spawn_task3_object(self.current_task_config)
+                self.inference_engine.set_task_name(self.current_task_config.get("task_name", ""))
             elif step == 500 and len(spawn_names) > 1:
                 Logger.info(f"Spawning object: {spawn_names[1]} at step {step}")
-                self._spawn_task3_object(object_spawn_order[spawn_names[1]])
-                self.inference_engine.set_task_name(object_spawn_order[spawn_names[1]].get("task_name", ""))
+                self.current_task_config = object_spawn_order[spawn_names[1]]
+                self._spawn_task3_object(self.current_task_config)
+                self.inference_engine.set_task_name(self.current_task_config.get("task_name", ""))
             elif step == 1000 and len(spawn_names) > 2:
                 Logger.info(f"Spawning object: {spawn_names[2]} at step {step}")
-                self._spawn_task3_object(object_spawn_order[spawn_names[2]])
-                self.inference_engine.set_task_name(object_spawn_order[spawn_names[2]].get("task_name", ""))
+                self.current_task_config = object_spawn_order[spawn_names[2]]
+                self._spawn_task3_object(self.current_task_config)
+                self.inference_engine.set_task_name(self.current_task_config.get("task_name", ""))
 
             self.world.step(render=True)
-            self.run_inference_step()
+            inference_step = self.run_inference_step()
 
             # Check for completion after step 1000
-            if step > 1000:
-                if self._check_all_task3_subtasks_complete():
-                    Logger.info("All sub-tasks completed successfully.")
-                    final_step = step + 1
-                    break
+            step_success = step > 1000 and self._check_all_task3_subtasks_complete()
+            self._record_trajectory_step(step, inference_step, step_success)
+            if step_success:
+                Logger.info("All sub-tasks completed successfully.")
+                final_step = step + 1
+                break
 
         return final_step
 
@@ -1041,10 +1179,18 @@ class EvaluationRunner:
 
         return sub_success
 
-    def _finalize_task3_rollout_result(self, rollout_idx, sub_success, final_step, csv_path):
+    def _finalize_task3_rollout_result(
+        self,
+        rollout_idx,
+        sub_success,
+        final_step,
+        csv_path,
+        trajectory_path,
+    ):
         """Finalize and save the result of a Task3 rollout"""
         final_success = all(sub_success.values())
         self.all_results_data[rollout_idx]["success"] = 1 if final_success else 0
+        self.all_results_data[rollout_idx]["trajectory_path"] = trajectory_path
 
         if final_success:
             Logger.info(f"--- Result: SUCCESS (at step {final_step}) ---\n")
@@ -1152,6 +1298,9 @@ class EvaluationRunner:
     def shutdown(self):
         """Clean shutdown."""
         Logger.info("Shutting down evaluation environment...")
+
+        if self.trajectory_recorder is not None:
+            self.trajectory_recorder.close()
 
         # Disconnect from gRPC server if using remote inference
         if hasattr(self, "inference_config") and self.inference_config.use_grpc:
