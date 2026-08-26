@@ -374,6 +374,30 @@ To continue to the next task when one task fails:
 bash script/eval_all_smolvla.sh --continue-on-error
 ```
 
+If Docker or the evaluation process was stopped, resume the most recent all-task run:
+
+```bash
+bash script/eval_all_smolvla.sh --resume-latest
+```
+
+The script skips tasks whose CSV contains no unfinished rollout, resumes the interrupted task
+from its first `success == -1` rollout, and then runs the remaining tasks. To select a run
+explicitly or inspect the plan without launching Isaac Sim:
+
+```bash
+bash script/eval_all_smolvla.sh \
+    --resume-run runs/eval_all_smolvla/20260826_102746 \
+    --dry-run
+
+bash script/eval_all_smolvla.sh \
+    --resume-run runs/eval_all_smolvla/20260826_102746
+```
+
+Progress is saved after each completed rollout. A rollout interrupted in the middle starts again
+from its initial simulator state; it does not restore an intermediate simulator step. Its existing
+`episode-XXXXXX` trajectory directory is overwritten when the retry starts, so the resumed run keeps
+one trajectory directory per rollout instead of creating `-attempt-XX` directories.
+
 Before launching the full benchmark, run a short pipeline and trajectory smoke test:
 
 ```bash

@@ -336,12 +336,16 @@ def create_evaluation_csv(csv_path: Path, model_type: str) -> None:
         f.write(header)
 
 
-def load_evaluation_progress(csv_path: Path) -> Tuple[pd.DataFrame, int]:
+def load_evaluation_progress(
+    csv_path: Path,
+    required_cols: Optional[set[str]] = None,
+) -> Tuple[pd.DataFrame, int]:
     """
     Loads evaluation progress from a CSV file.
 
     Args:
         csv_path: Path to the CSV file.
+        required_cols: Columns required for this task's progress format.
 
     Returns:
         (DataFrame, index of the next rollout to execute).
@@ -353,7 +357,7 @@ def load_evaluation_progress(csv_path: Path) -> Tuple[pd.DataFrame, int]:
         df = pd.read_csv(csv_path, comment="#")
 
         # Check for required columns
-        required_cols = {"rollout_idx", "x", "y", "success"}
+        required_cols = required_cols or {"rollout_idx", "x", "y", "success"}
         if not required_cols.issubset(df.columns):
             Logger.warning("CSV file missing required columns. Starting fresh.")
             return pd.DataFrame(), 0

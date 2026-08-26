@@ -1007,10 +1007,12 @@ class EvaluationRunner:
         bbox = None
 
         if csv_path.exists():
-            df_existing, start_rollout = load_evaluation_progress(csv_path)
+            df_existing, start_rollout = load_evaluation_progress(
+                csv_path,
+                required_cols={"rollout_idx", "success"},
+            )
             if not df_existing.empty:
                 self.all_results_data = df_existing.to_dict("records")
-                self.evaluation_points = df_existing[["x", "y"]].to_numpy()
                 Logger.info(f"Loaded {len(df_existing)} existing results, starting from rollout {start_rollout + 1}")
 
         if not self.all_results_data:

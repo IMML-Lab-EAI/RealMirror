@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import shutil
 from typing import Any, Mapping
 import warnings
 
@@ -196,6 +197,7 @@ class RealMirrorTrajectoryRecorder:
         """Close a partial episode while preserving every flushed step."""
         if not self._active:
             return
+        episode_dir = self._episode_dir
         self._metadata.update({"status": status, "num_steps": self._step_count})
         if self._h5 is not None:
             self._h5.attrs["status"] = status
@@ -204,19 +206,24 @@ class RealMirrorTrajectoryRecorder:
             self._h5.close()
             self._h5 = None
         self._write_metadata()
-        print(f"[trajectory] preserved partial episode at {self._episode_dir}")
+
+        if self.save_video and episode_dir is not None and self._step_count:
+            try:
+                self._write_preview_video(episode_dir)
+            except Exception as exc:
+                warnings.warn(f"Could not write interrupted trajectory preview video: {exc}")
+
+        print(f"[trajectory] preserved partial episode at {episode_dir}")
         self._active = False
 
     def _allocate_episode_dir(self, rollout_index: int) -> Path:
         base = self.run_dir / f"episode-{rollout_index:06d}"
-        if not base.exists():
-            return base
-        attempt = 1
-        while True:
-            candidate = self.run_dir / f"episode-{rollout_index:06d}-attempt-{attempt:02d}"
-            if not candidate.exists():
-                return candidate
-            attempt += 1
+        if base.exists():
+            if not base.is_dir():
+                raise RuntimeError(f"Trajectory episode path is not a directory: {base}")
+            print(f"[trajectory] overwriting existing incomplete episode at {base}")
+            shutil.rmtree(base)
+        return base
 
     def _capture_snapshot(self) -> dict[str, np.ndarray]:
         joint_positions = self._robot.get_joint_positions()
