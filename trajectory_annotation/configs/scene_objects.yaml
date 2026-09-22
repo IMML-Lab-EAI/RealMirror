@@ -1,0 +1,221 @@
+# Which prims of each scene USD count as one "object" for whole-scene
+# annotation, and how they are named.
+#
+#   split:   prims whose CHILDREN become individual objects (recursive list of
+#            prim paths relative to the scene root, e.g. "/model_chopping_board").
+#            By default every child of the scene's default prim is one object.
+#   labels:  prim path (relative to scene root) -> {name, category[, background]}
+#            Anything not listed gets an automatic name derived from the prim
+#            name (see realmirror_annot.scene.auto_label).
+#   background: large structural prims (walls, floor, whole-room shells) are
+#            still rendered (they occlude) and annotated, but flagged.
+#
+# Categories follow the team's Qwen baseline: object, container, tool, food,
+# electronic_device, furniture, support_surface, structural_element.
+defaults:
+  max_faces_per_object: 150000     # decimation target for the render cache
+  max_faces_background: 300000
+
+tasks:
+  Task1_Kitchen_Cleanup:
+    split: [/model_chopping_board, /model_platter]
+    labels:
+      /model_LargeCabinet: {name: back_counter, category: furniture, background: true}
+      /model_cupboard: {name: kitchen_counter, category: furniture, background: true}
+      /chair: {name: chair, category: furniture}
+      /extractor: {name: range_hood, category: electronic_device}
+      /juicer: {name: juicer, category: electronic_device}
+      /oven: {name: microwave, category: electronic_device}   # 36x47x27 cm countertop unit
+      /PlateRack: {name: plate_rack, category: container}
+      /riceCooker: {name: rice_cooker, category: electronic_device}
+      /model_05kitchen: {name: kitchen_room, category: structural_element, background: true}
+      /model_potted_plant: {name: potted_plant, category: object}
+      /model_potted_plant_01: {name: potted_plant, category: object}
+      /model_potted_plant_02: {name: potted_plant, category: object}
+      /model_potted_plant_03: {name: potted_plant, category: object}
+      /model_potted_plant_04: {name: potted_plant, category: object}
+      /model_potted_plant_05: {name: potted_plant, category: object}
+      /model_potted_plant_06: {name: potted_plant, category: object}
+      /model_pot: {name: cooking_pot, category: container}
+      /model_pot2: {name: cooking_pot, category: container}
+      /model_chopping_board/E_Component96_1: {name: chopping_board, category: support_surface}
+      /model_chopping_board/E_part1_2: {name: cucumber, category: food}
+      /model_chopping_board/E_Component154_3: {name: red_onion, category: food}
+      /model_chopping_board/E_Component18_4: {name: apple, category: food}
+      /model_chopping_board/E_Component113_5: {name: lemon, category: food}
+      /model_chopping_board/E_Component131_6: {name: mango, category: food}
+      /model_chopping_board/E_Component17_7: {name: napa_cabbage, category: food}
+      /model_platter/E_Component11_1: {name: platter, category: container}
+      /model_platter/E_Component131_2: {name: mango, category: food}
+      /model_platter/E_part1_3: {name: cucumber, category: food}
+      /model_platter/E_Component154_4: {name: red_onion, category: food}
+      /model_platter/E_Component113_5: {name: lemon, category: food}
+      /model_basket_22: {name: yellow_basket, category: container}
+      /new_leshi: {name: red_potato_chip_can, category: food}
+      /new_greentee: {name: green_tea_bottle, category: food}
+      /new_yellowtea: {name: lemon_tea_bottle, category: food}
+  Task2_Cup_to_Cup_Transfer:
+    split: [/SM_P_Flavour_02, /Kitchen_KnifeHolders001, /Pot057]
+    labels:
+      /Kitchen_Wall001: {name: wall, category: structural_element, background: true}
+      /Kitchen_Floor: {name: floor, category: structural_element, background: true}
+      /Kitchen_Light: {name: ceiling_light, category: electronic_device}
+      /Kitchen_Windows: {name: window, category: structural_element, background: true}
+      /Kitchen_Ground: {name: ground, category: structural_element, background: true}
+      /Plane: {name: ground_plane, category: structural_element, background: true}
+      /Kitchen_InsularShelf_01: {name: kitchen_counter, category: furniture, background: true}
+      /Kitchen_Cabinet001_01: {name: back_counter, category: furniture, background: true}
+      /Kitchen_Cabinet002: {name: tall_cabinet, category: furniture, background: true}
+      /Kitchen_TopCabinet_01: {name: upper_cabinet, category: furniture, background: true}
+      /WallStackOven004_01: {name: wall_oven, category: electronic_device}
+      /Stovetop012_01: {name: stovetop, category: electronic_device}
+      /Kitchen_Bottle: {name: bottle, category: container}
+      /Kitchen_Bottle_01: {name: bottle, category: container}
+      /Kitchen_bottle002: {name: wine_bottle, category: container}
+      /Kitchen_bottle003: {name: wine_bottle, category: container}
+      /Kitchen_bottle004: {name: wine_bottle, category: container}
+      /Kitchen_Bottle005: {name: bottle, category: container}
+      /Kitchen_Bottle006: {name: bottle, category: container}
+      /Kitchen_Bottle007: {name: bottle, category: container}
+      /SM_P_Choppingboard_01: {name: chopping_board, category: support_surface}
+      /SM_P_Flavour_02/SM_P_Flavour_03: {name: spice_jar, category: container}
+      /SM_P_Flavour_02/SM_P_Jar_01: {name: jar, category: container}
+      /SM_P_Flavour_02/SM_P_Flavour_04: {name: spice_jar, category: container}
+      /SM_P_Flavour_02/SM_P_Flavour_02: {name: spice_jar, category: container}
+      /SM_P_Flavour_02/SM_P_Tray_01: {name: tray, category: container}
+      /Kitchen_Disk001: {name: plate, category: container}
+      /Kitchen_Disk001_01: {name: plate, category: container}
+      /Kitchen_Disk001_02: {name: plate, category: container}
+      /Pot057/Pot057_Lid: {name: pot_lid, category: tool}
+      /Pot057/Pot057_Body: {name: cooking_pot, category: container}
+      /Kitchen_Paper: {name: paper_towel, category: object}
+      /Kitchen_KnifeHolders001/Kitchen_KnifeHolders001: {name: knife_holder, category: container}
+      /Kitchen_KnifeHolders001/Kitchen_Knife001_01: {name: knife, category: tool}
+      /Kitchen_KnifeHolders001/Kitchen_Knife001_02: {name: knife, category: tool}
+      /Kitchen_KnifeHolders001/Kitchen_Knife001_03: {name: knife, category: tool}
+      /Kitchen_KnifeHolders001/Kitchen_Knife001_04: {name: knife, category: tool}
+      /Kitchen_Box: {name: box, category: container}
+      /Kitchen_Box07: {name: canister, category: container}
+      /Kitchen_Box02: {name: canister, category: container}
+      /Kitchen_Basket: {name: utensil_basket, category: container}
+      /Kitchen_Hookrack001: {name: hook_rack, category: object}
+      /Kitchen_Shelf001: {name: shelf, category: furniture}
+      /RangeHood015: {name: range_hood, category: electronic_device}
+      /Toaster003: {name: toaster, category: electronic_device}
+      /Microwave017: {name: microwave, category: electronic_device}
+      /Dishwasher054_01: {name: dishwasher, category: electronic_device}
+      /waterbottle_08: {name: water_bottle, category: container}
+      /Sink054: {name: sink, category: object}
+      /cup_01: {name: left_cup, category: container}
+      /cup_02: {name: right_cup, category: container}
+      /stawberry: {name: strawberry, category: food}
+  Task3_Assembly_Line_Sorting:
+    # NOTE: the /Convey split takes effect only when data/scene_cache/Task3_* is rebuilt;
+    # rebuilding changes mask ids, so Task3 must then be re-annotated as a whole.
+    split: [/Convey]
+    labels:
+      /warehouse: {name: warehouse, category: structural_element, background: true}
+      /Convey/ConveyorBelt_A08: {name: front_conveyor, category: support_surface}   # x=+1.0 m, holds the sprite target rollers
+      /Convey/ConveyorBelt_A05_05: {name: left_conveyor, category: support_surface}    # y=+0.55 m
+      /Convey/ConveyorBelt_A43: {name: main_conveyor, category: support_surface}    # 1.9 x 1.8 m junction piece: the centre belt + the right-hand belt
+      /Convey/ConveyorBelt_A05_03: {name: rear_conveyor, category: support_surface}    # x=-0.6 m, bottles start here
+      /dolly_physics: {name: dolly_cart, category: object}
+      /dolly_physics_01: {name: dolly_cart, category: object}
+      /dolly_physics_02: {name: dolly_cart, category: object}
+      /small_KLT: {name: assembly_line_box, category: container}
+      /small_KLT_01: {name: right_assembly_line_box, category: container}
+      /small_KLT_02: {name: left_assembly_line_box, category: container}
+      /cy_hole_01: {name: oil_holder_plate, category: support_surface}
+      /cy_hole_02: {name: cola_holder_plate, category: support_surface}
+      /cy_hole_03: {name: sprite_holder_plate, category: support_surface}
+      /cola: {name: cola_bottle, category: food}
+      /oil: {name: oil_bottle, category: object}
+      /sprite: {name: sprite_bottle, category: food}
+  Task4_Can_Stacking:
+    split: [/model_01fruit_platter, /model_01fruit_platter2]
+    labels:
+      /model_01KitchenParlor: {name: kitchen_parlor_room, category: structural_element, background: true}
+      /model_1_01Fridge01: {name: refrigerator, category: electronic_device}
+      /model_1_12WashingMachine: {name: washing_machine, category: electronic_device}
+      /model_1_09BarChair: {name: bar_chair, category: furniture}
+      /model_1_13Board: {name: board, category: object}
+      /model_1_06Chair: {name: chair, category: furniture}
+      /model_1_06Chair_01: {name: chair, category: furniture}
+      /model_1_06Chair_02: {name: chair, category: furniture}
+      /model_1_06Chair_03: {name: chair, category: furniture}
+      /model_1_15RoundTable: {name: round_table, category: furniture}
+      /model_default: {name: table, category: furniture}
+      /model_03TVCabinet: {name: tv_cabinet, category: furniture}
+      /model_1_10Cabinet: {name: cabinet, category: furniture}
+      /model_1_11CabinetB: {name: cabinet, category: furniture}
+      /model_04TV: {name: television, category: electronic_device}
+      /model_1_05TeaTable: {name: tea_table, category: furniture}
+      /model_5_8oven: {name: oven, category: electronic_device}
+      /model_1_02Cupboard: {name: kitchen_counter_cupboard, category: furniture, background: true}
+      /model_Drying_racks01: {name: drying_rack, category: object}
+      /model_1_08Oven: {name: oven, category: electronic_device}
+      /model_01fruit_platter/E_Component163_1: {name: fruit_platter, category: container}
+      /model_01fruit_platter2/E_Component163_1: {name: fruit_platter, category: container}
+      /model_01fruit_platter/E_Component15_10: {name: apple, category: food}
+      /model_01fruit_platter/E_Component18_2: {name: apple, category: food}
+      /model_01fruit_platter/E_Component15_5: {name: apple, category: food}
+      /model_01fruit_platter/E_Component26_4: {name: banana, category: food}
+      /model_01fruit_platter/E_Component26_6: {name: banana, category: food}
+      /model_01fruit_platter/E_Component24_3: {name: lemon, category: food}
+      /model_01fruit_platter/E_Component24_7: {name: lemon, category: food}
+      /model_01fruit_platter/E_Component24_8: {name: lemon, category: food}
+      /model_01fruit_platter/E_Component24_9: {name: lemon, category: food}
+      /model_01fruit_platter2/E_Component15_10: {name: apple, category: food}
+      /model_01fruit_platter2/E_Component18_2: {name: apple, category: food}
+      /model_01fruit_platter2/E_Component15_5: {name: apple, category: food}
+      /model_01fruit_platter2/E_Component26_4: {name: banana, category: food}
+      /model_01fruit_platter2/E_Component26_6: {name: banana, category: food}
+      /model_01fruit_platter2/E_Component24_3: {name: lemon, category: food}
+      /model_01fruit_platter2/E_Component24_7: {name: lemon, category: food}
+      /model_01fruit_platter2/E_Component24_8: {name: lemon, category: food}
+      /model_01fruit_platter2/E_Component24_9: {name: lemon, category: food}
+      /_05_tomato_soup_can: {name: red_can_left, category: food}
+      /_05_tomato_soup_can_01: {name: red_can_right, category: food}
+      /_02_master_chef_can: {name: blue_can_right, category: food}
+      /_02_master_chef_can_01: {name: blue_can_left, category: food}
+  Task5_Air_Fryer_Manipulation:
+    split: [/s1, /s1/model_bakingchamber]
+    labels:
+      /GroundPlane: {name: ground_plane, category: structural_element, background: true}
+      /s1/s1: {name: apartment_room, category: structural_element, background: true}
+      /s1/wall_oven: {name: wall_oven, category: electronic_device}
+      /s1/Contemporary_LowHalfDesk: {name: desk, category: furniture}
+      /s1/Shield_Controller: {name: game_controller, category: electronic_device}
+      /s1/Colbert: {name: table_lamp, category: electronic_device}
+      /s1/Dylan: {name: table_lamp, category: electronic_device}
+      /s1/RubixCube: {name: rubiks_cube, category: object}
+      /s1/PhotoAlbum_Closed: {name: photo_album, category: object}
+      /s1/Book_GetKnowPPU: {name: book, category: object}
+      /s1/OmniConnect2017: {name: book, category: object}
+      /s1/AlarmClock_Retro: {name: alarm_clock, category: object}
+      /s1/OversizedClock: {name: wall_clock, category: object}
+      /s1/shubiao: {name: computer_mouse, category: electronic_device}
+      /s1/lajitong: {name: trash_can, category: container}
+      /s1/lajitong_01: {name: trash_can, category: container}
+      /s1/zongcheng: {name: computer_tower, category: electronic_device}
+      /s1/zongcheng_01: {name: computer_tower, category: electronic_device}
+      /s1/model_bakingchamber/bakingChamber_E_body_1: {name: air_fryer_body, category: electronic_device}
+      /s1/model_bakingchamber/bakingChamber_E_basket_4: {name: air_fryer_basket, category: container}
+      /chicken_wrap: {name: chicken_roll, category: food}
+      /plate: {name: plate, category: container}
+      /leg: {name: chicken_drumstick, category: food}
+      /carrot: {name: carrot, category: food}
+    # prefix rules for the many repeated prims under /s1 (applied when no exact label)
+    prefix_labels:
+      /s1/Newman: {name: office_chair, category: furniture}
+      /s1/Contemporary_LockedStorage: {name: storage_cabinet, category: furniture}
+      /s1/Plant: {name: potted_plant, category: object}
+      /s1/TV_Wall: {name: wall_tv, category: electronic_device}
+      /s1/orbbec_gemini: {name: depth_camera, category: electronic_device}
+      /s1/jianpan: {name: keyboard, category: electronic_device}
+      /s1/BookStack: {name: book_stack, category: object}
+      /s1/Clock_Hucksbee: {name: table_clock, category: object}
+      /s1/OpenMagazine: {name: open_magazine, category: object}
+      /s1/MagazineStack: {name: magazine_stack, category: object}
+      /s1/Sketchbook: {name: sketchbook, category: object}
+      /s1/MechanicalPencil: {name: mechanical_pencil, category: tool}

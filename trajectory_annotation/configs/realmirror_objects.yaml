@@ -1,0 +1,60 @@
+# Human-readable names / categories for every tracked prim in the RealMirror
+# benchmark (prim paths come from each task's task_config.json).
+scene_usd:
+  Task1_Kitchen_Cleanup: kitchen.usd
+  Task2_Cup_to_Cup_Transfer: KitchenRoom_RSS.usd
+  Task3_Assembly_Line_Sorting: zhiyuan_A2_scene_task_3.usd
+  Task4_Can_Stacking: kitchen_with_parlor.usd
+  Task5_Air_Fryer_Manipulation: 587.usd
+objects:
+  Task1_Kitchen_Cleanup:
+    /scene/new_leshi/Mesh0: {name: red_potato_chip_can, category: food}
+    /scene/new_greentee/Mesh0: {name: green_tea_bottle, category: food}
+    /scene/new_yellowtea/Mesh0: {name: lemon_tea_bottle, category: food}
+    /scene/model_basket_22: {name: yellow_basket, category: container}
+  Task2_Cup_to_Cup_Transfer:
+    /scene/stawberry/P_Strawberry_GRP/ExteriorLayer_GEO: {name: strawberry, category: food}
+    /scene/cup_02/tmp7ih5sl_a_ply/tmp7ih5sl_a_ply: {name: right_cup, category: container}
+    /scene/cup_01/tmp7ih5sl_a_ply/tmp7ih5sl_a_ply: {name: left_cup, category: container}
+  Task3_Assembly_Line_Sorting:
+    /scene/oil/Mesh0: {name: oil_bottle, category: object}
+    /scene/cola/Mesh0: {name: cola_bottle, category: food}
+    /scene/sprite/Mesh0: {name: sprite_bottle, category: food}
+    /scene/cy_hole_01/mesh______: {name: oil_holder_plate, category: support_surface}
+    /scene/cy_hole_02/mesh______: {name: cola_holder_plate, category: support_surface}
+    /scene/cy_hole_03/mesh______: {name: sprite_holder_plate, category: support_surface}
+    /scene/small_KLT_02/Visuals/FOF_Mesh_Magenta_Box: {name: left_assembly_line_box, category: container}
+    /scene/small_KLT_01/Visuals/FOF_Mesh_Magenta_Box: {name: right_assembly_line_box, category: container}
+    /scene/Convey/ConveyorBelt_A08/Rollers: {name: conveyor_belt_rollers, category: support_surface}
+  Task4_Can_Stacking:
+    /scene/_02_master_chef_can_01: {name: blue_can_left, category: food}
+    /scene/_02_master_chef_can: {name: blue_can_right, category: food}
+    /scene/_05_tomato_soup_can: {name: red_can_left, category: food}
+    /scene/_05_tomato_soup_can_01: {name: red_can_right, category: food}
+  Task5_Air_Fryer_Manipulation:
+    /scene/chicken_wrap/Mesh0: {name: chicken_roll, category: food}
+    /scene/leg/Mesh0: {name: chicken_drumstick, category: food}
+    /scene/carrot/Mesh0: {name: carrot, category: food}
+    /scene/plate/Mesh0: {name: plate, category: container}
+    /scene/s1/model_bakingchamber/bakingChamber_E_basket_4: {name: air_fryer_basket, category: container}
+    /scene/s1/model_bakingchamber/bakingChamber_E_body_1: {name: air_fryer_body, category: electronic_device}
+robot:
+  urdf: data/realmirror-asset/robot/A2_t2d0_flagship_opensource_urdf/urdf/raise_a2_t2d0_flagship/model_no_col.urdf
+  mesh_root: data/realmirror-asset/robot/A2_t2d0_flagship_opensource_urdf
+  usd: data/realmirror-asset/robot/AgiBotA2/model_no_col2.usd
+  hand_links:
+    left: [left_hand, L_thumb_swing, L_thumb_1, L_thumb_2, L_thumb_3, L_index_1, L_index_2, L_middle_1, L_middle_2, L_ring_1, L_ring_2, L_little_1, L_little_2]
+    right: [right_hand, R_thumb_swing, R_thumb_1, R_thumb_2, R_thumb_3, R_index_1, R_index_2, R_middle_1, R_middle_2, R_ring_1, R_ring_2, R_little_1, R_little_2]
+  palm_link: {left: left_hand, right: right_hand}
+  fingertip_links:
+    left: {thumb: L_thumb_3, index: L_index_2, middle: L_middle_2, ring: L_ring_2, little: L_little_2}
+    right: {thumb: R_thumb_3, index: R_index_2, middle: R_middle_2, ring: R_ring_2, little: R_little_2}
+  # finger joint used to decide open/closed (gripper_config stage2 closed angle = 50 deg for index_1)
+  closure_joint: {left: L_index_1_joint, right: R_index_1_joint}
+  closure_closed_deg: 50.0
+  wrist_camera:
+    # PhysicsFixedJoint in model_no_col2.usd: body0 = <side>_arm_link05, body1 = camera prim
+    left:  {parent_link: left_arm_link05,  local_pos0: [-0.012717678, 0.17269106, 0.06808143], local_rot0_wxyz: [5.8797788e-8, -1.0043674e-7, 0.94059175, 0.33953956]}
+    right: {parent_link: right_arm_link05, local_pos0: [-0.012719966, 0.17268994, -0.06808001], local_rot0_wxyz: [0.94059074, -0.33954248, -1.0939325e-7, 3.9722003e-8]}
+    focal_length_mm: 10.0
+    horizontal_aperture_mm: 15.0

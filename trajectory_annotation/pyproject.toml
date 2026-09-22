@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realmirror-annot"
+version = "0.1.0"
+description = "Per-step object and hand annotation for RealMirror evaluation trajectories"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.23,<3",
+    "h5py>=3.8,<4",
+    "opencv-python-headless>=4.8,<6",
+    "PyYAML>=6,<7",
+    "trimesh>=4,<5",
+]
+
+[project.optional-dependencies]
+# 0.1.13 imports Python 3.10-only annotations despite allowing Python 3.9.
+assets = ["usd-core>=24", "fast-simplification==0.1.9"]
+render = ["pyrender==0.1.45"]
+test = ["pytest>=7,<9"]
+
+[tool.setuptools]
+packages = ["realmirror_annot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
