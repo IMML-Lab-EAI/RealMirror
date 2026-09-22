@@ -3,6 +3,10 @@
 SmolVLA 평가 기록에 물체·양손·주변 환경의 2D/3D 주석을 생성합니다.
 **5개 작업 · 1,500 에피소드 · 662,190 스텝 · 3개 카메라(256×256)**. 원본 RGB와 action은 별도 HDF5에 유지합니다.
 
+![Task1 주석 예시: head, left_wrist, right_wrist](docs/images/task1_episode000006_step000000.jpg)
+
+Task1 · episode-000006 · step 0. 왼쪽부터 head / left_wrist / right_wrist. 물체·양손·주변 환경의 2D 박스를 표시합니다.
+
 ## Annotation 항목
 
 | 대상 | 주석 |
